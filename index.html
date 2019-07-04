@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Lever Arm Visualizer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="css/style.css">
+
+    <script type="module">
+        import { renderView } from "./js/lever_arm_visualizer_view_controls.js";
+
+        let page_elements = {
+            webgl_div: "container",
+            controls_div: "controls_div",
+        }
+
+        renderView(page_elements);
+
+    </script>
+
+</head>
+
+<body>
+    <h1>Lever Arm Visualizer</h1>
+    <div id="container"></div>
+    <div id="controls_div"></div>
+</body>
+
+</html>
