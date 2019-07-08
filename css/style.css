@@ -45,6 +45,54 @@ canvas {
     height: 800px;
 }
 
+.collapsible {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  border: 1px black solid;
+  text-align: left;
+  outline: none;
+  font-size: 15px;
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .collapsible:hover {
+  background-color: #ccc;
+}
+
+/* Style the collapsible content. Note: hidden by default */
+.content {
+  padding: 0 18px;
+  display: none;
+  overflow: hidden;
+  background-color: #f1f1f1;
+  transition: max-height 0.2s ease-out;
+}
+
 #controls_div {
+
+}
+
+#vehicle_controls {
+    display: grid;
+    grid-template-columns: 3fr 3fr 3fr;
+    grid-template-areas: "vehicle_selection vehicle_orientation vehicle_offsets";
+}
+
+#vehicle_selection {
+  grid-area: vehicle_selection;
+}
+
+#vehicle_offsets {
+  grid-area: vehicle_scale;
+}
+
+#vehicle_orientation {
+  grid-area: vehicle_orientation;
+}
+
+#sensor_controls {
 
 }

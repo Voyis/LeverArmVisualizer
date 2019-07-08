@@ -23,17 +23,39 @@ const vehicles = {
     pontoon: {
         file: "models/PontoonBoat.glb",
         name: "Pontoon Boat",
-        scale: 10,
+        scale: 5,
+        default_size: 4.0, //m at 10 scale
+        rotation: [0, 0, 0], //roll pitch yaw, degrees
     },
     submarine: {
         file: "./models/submarine.glb",
         name: "Submarine",
-        scale: 10,
+        scale: 0.5,
+        default_size: 4.0, //m at 0.5scale
+        rotation: [0, 0, -90], //roll pitch yaw, degrees
     },
-    getCurrentSelection: function () {
-        return "pontoon";
+};
+let vehicle_adjust = {
+    scale_element: document.createElement("INPUT"),
+    get scale() {
+        let current_selected_vehicle = getVehicleSelection();
+        let default_scale = vehicles[current_selected_vehicle].scale;
+        let default_size = vehicles[current_selected_vehicle].default_size;
+        return default_scale * this.scale_element.value / default_size;
     },
-    selection_element_id: "vehicle_selection_list",
+    x1_element: document.createElement("input"),
+    x2_element: document.createElement("input"),
+    x3_element: document.createElement("input"),
+    get translation() {
+        return [x1_element.value, x2_element.value, x3_element.value];
+    }, //user specified offsets
+    roll_element: document.createElement("input"),
+    pitch_element: document.createElement("input"),
+    yaw_element: document.createElement("input"),
+    get rotation() {
+        return [roll_element.value, pitch_element.value, yaw_element.value];
+    }, //user specified offsets
+    base_rotation: [0, 0, 0], //basic rotation to align co-ordinates of vehicle
 };
 
 //initialize and start rendering
@@ -62,12 +84,127 @@ function initControls(page_elements) {
     let controls_div = document.getElementById(page_elements.controls_div);
 
     /**
-     * Vehicle Controls and selection.
+     * Vehicle Controls and Selection.
      */
     {
         let vehicle_div = document.createElement("div");
-        vehicle_div.id = "vehicle_controls"
+        vehicle_div.id = "vehicle_div";
+        let button = document.createElement("button");
+        button.className = "collapsible";
+        button.innerHTML = "Vehicle Controls";
+        let content_veh = document.createElement("div");
+        content_veh.id = "vehicle_controls";
+        content_veh.classList.add("content");
+        content_veh.style.display = "none";
+        button.addEventListener("click", clickCollapsible);
+        vehicle_div.appendChild(button);
+        let vehicle_select_div = document.createElement("div");
+        vehicle_select_div.id = "vehicle_selection";
+        let vehicle_select_title = document.createElement("h2");
+        vehicle_select_title.innerHTML = "Vehicle Selection";
+        vehicle_select_div.appendChild(vehicle_select_title);
 
+        let keys = Object.keys(vehicles);
+        for (let i = 0; i < keys.length; i++) {
+            let radio_button = document.createElement("input");
+            radio_button.type = "radio";
+            radio_button.name = "vehicles";
+            radio_button.value = keys[i];
+            if (i === 0) {
+                radio_button.checked = true;
+            }
+            radio_button.addEventListener("change", function () {
+                loadObjectIntoScene(keys[i]);
+            });
+            let radio_label = document.createTextNode(vehicles[keys[i]].name);
+            vehicle_select_div.appendChild(radio_button);
+            vehicle_select_div.appendChild(radio_label);
+            vehicle_select_div.appendChild(document.createElement("BR"));
+        }
+
+        //Vehicle Scale
+        let vehicle_adjust_label = document.createElement("h2");
+        vehicle_adjust_label.innerHTML = "Vehicle Length (approx)"
+        vehicle_adjust.scale_element.type = "number";
+        vehicle_adjust.scale_element.step = 0.1
+        vehicle_adjust.scale_element.min = 2;
+        vehicle_adjust.scale_element.max = 20.;
+        vehicle_adjust.scale_element.value = vehicles[keys[0]].default_size;
+        vehicle_adjust.scale_element.addEventListener("change", redrawScene);
+        vehicle_select_div.appendChild(vehicle_adjust_label);
+        vehicle_select_div.appendChild(vehicle_adjust.scale_element);
+        vehicle_select_div.appendChild(document.createTextNode(" m"));
+
+        content_veh.appendChild(vehicle_select_div);
+
+        //Vehicle Orientation
+        let vehicle_orient_div = document.createElement("div");
+        vehicle_orient_div.id = "vehicle_orientation";
+        let vehicle_orient_label = document.createElement("h2");
+        vehicle_orient_label.innerHTML = "Orientation";
+        vehicle_orient_div.appendChild(vehicle_orient_label);
+        let vehicle_forward_label = document.createElement("h3");
+        vehicle_forward_label.innerHTML = "Forward Direction";
+        vehicle_orient_div.appendChild(vehicle_forward_label);
+        let vehicle_up_label = document.createElement("h3");
+        vehicle_up_label.innerHTML = "Up Direction";
+        vehicle_orient_div.appendChild(vehicle_up_label);
+
+        content_veh.appendChild(vehicle_orient_div);
+
+        //Vehicle Offsets
+        let vehicle_offset_div = document.createElement("div");
+        vehicle_offset_div.id = "vehicle_offsets";
+        let vehicle_offset_label = document.createElement("h2");
+        vehicle_offset_label.innerHTML = "CRP Offset";
+
+        let tran_offset_label = document.createElement("h3");
+
+        let rot_offset_label = document.createElement("h3");
+
+
+        vehicle_div.appendChild(content_veh);
+
+        controls_div.appendChild(vehicle_div);
+    }
+
+    /**
+     * Sensor Controls and Selection.
+     */
+    {
+        let sensor_div = document.createElement("div");
+        sensor_div.id = "sensor_div";
+        let button = document.createElement("button");
+        button.className = "collapsible";
+        button.innerHTML = "Sensor Controls";
+        let content_sense = document.createElement("div");
+        content_sense.id = "sensor_controls";
+        content_sense.classList.add("content");
+        content_sense.style.display = "none";
+        button.addEventListener("click", clickCollapsible);
+        sensor_div.appendChild(button);
+        sensor_div.appendChild(content_sense);
+        controls_div.appendChild(sensor_div);
+    }
+
+
+    function clickCollapsible() {
+        this.classList.toggle("active");
+        let content = this.nextSibling;
+        if (content.style.display === "block") {
+            content.style.display = "none";
+        } else {
+            content.style.display = "block";
+        }
+    };
+}
+
+function getVehicleSelection() {
+    let radios = document.getElementsByName("vehicles");
+    for (let i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+            return radios[i].value;
+        }
     }
 }
 
@@ -95,7 +232,7 @@ function init3D(page_elements) {
     scene.add(ambientLight, pointLight);
 
     //load default selected object.
-    loadObjectIntoScene(vehicles.getCurrentSelection());
+    loadObjectIntoScene("pontoon");
 
     camera.position.z = 5000;
 
@@ -141,9 +278,9 @@ function init3D(page_elements) {
         }
     }
 
-    drawAxis([1, 0, 0]);
-    drawAxis([0, 1, 0]);
-    drawAxis([0, 0, 1]);
+    drawAxis([1, 0, 0], 0xFF0000);
+    drawAxis([0, 1, 0], 0x00FF00);
+    drawAxis([0, 0, 1], 0x0000FF);
 }
 
 
@@ -156,6 +293,16 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+/**
+ * Updates scene elements and calls for a render.
+ */
+function redrawScene() {
+    //adjust vehicle
+    if (current_vehicle) {
+        let scale = vehicle_adjust.scale;
+        current_vehicle.scale.set(scale, scale, scale);
+    }
+}
 
 function loadObjectIntoScene(selected_object) {
     if (!vehicles[selected_object]) {
@@ -165,7 +312,7 @@ function loadObjectIntoScene(selected_object) {
 
     let loader = new GLTFLoader();
     loader.load(vehicles[selected_object].file, function (gltf) {
-        let scale = vehicles[selected_object].scale;
+        let scale = vehicle_adjust.scale;
         gltf.scene.scale.set(scale, scale, scale);
         gltf.scene.position.x = 0;				    //Position (x = right+ left-) 
         gltf.scene.position.y = 0;				    //Position (y = up+, down-)
