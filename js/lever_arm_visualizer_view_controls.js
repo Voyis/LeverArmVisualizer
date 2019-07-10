@@ -47,13 +47,13 @@ let vehicle_adjust = {
     x2_element: document.createElement("input"),
     x3_element: document.createElement("input"),
     get translation() {
-        return [x1_element.value, x2_element.value, x3_element.value];
+        return [Number(this.x1_element.value), Number(this.x2_element.value), Number(this.x3_element.value)];
     }, //user specified offsets
     roll_element: document.createElement("input"),
     pitch_element: document.createElement("input"),
     yaw_element: document.createElement("input"),
     get rotation() {
-        return [roll_element.value, pitch_element.value, yaw_element.value];
+        return [Number(this.roll_element.value), Number(this.pitch_element.value), Number(this.yaw_element.value)];
     }, //user specified offsets
     base_rotation: [0, 0, 0], //basic rotation to align co-ordinates of vehicle
 };
@@ -92,10 +92,12 @@ function initControls(page_elements) {
         let button = document.createElement("button");
         button.className = "collapsible";
         button.innerHTML = "Vehicle Controls";
+        let content_veh_over = document.createElement("div");
         let content_veh = document.createElement("div");
         content_veh.id = "vehicle_controls";
-        content_veh.classList.add("content");
-        content_veh.style.display = "none";
+        content_veh_over.classList.add("content");
+        content_veh_over.style.display = "none";
+        content_veh_over.appendChild(content_veh);
         button.addEventListener("click", clickCollapsible);
         vehicle_div.appendChild(button);
         let vehicle_select_div = document.createElement("div");
@@ -146,9 +148,60 @@ function initControls(page_elements) {
         let vehicle_forward_label = document.createElement("h3");
         vehicle_forward_label.innerHTML = "Forward Direction";
         vehicle_orient_div.appendChild(vehicle_forward_label);
+
+        //X1 or X2 forward
+        let x1_forward = document.createElement("input");
+        x1_forward.type = "radio";
+        x1_forward.name = "forward"
+        x1_forward.value = "x1_forward";
+        x1_forward.checked = true;
+        x1_forward.addEventListener("change", setForwardDirection);
+        let x2_forward = document.createElement("input");
+        x2_forward.type = "radio";
+        x2_forward.name = "forward"
+        x2_forward.value = "x2_forward";
+        x2_forward.addEventListener("change", setForwardDirection);
+        vehicle_orient_div.appendChild(x1_forward);
+        vehicle_orient_div.appendChild(document.createTextNode("X1 Forward"));
+        vehicle_orient_div.appendChild(x2_forward);
+        vehicle_orient_div.appendChild(document.createTextNode("X2 Forward"));
+
+        function setForwardDirection() {
+            if (x1_forward.checked) {
+                vehicle_adjust.base_rotation[2] = 0;
+            } else {
+                vehicle_adjust.base_rotation[2] = 90;
+            }
+        }
+
         let vehicle_up_label = document.createElement("h3");
         vehicle_up_label.innerHTML = "Up Direction";
         vehicle_orient_div.appendChild(vehicle_up_label);
+
+        //x3 up or down?
+        let x3_up = document.createElement("input");
+        x3_up.type = "radio";
+        x3_up.name = "updown"
+        x3_up.value = "x3_up";
+        x3_up.checked = true;
+        x3_up.addEventListener("change", setUpDirection);
+        let x3_down = document.createElement("input");
+        x3_down.type = "radio";
+        x3_down.name = "updown"
+        x3_down.value = "x3_down";
+        x3_down.addEventListener("change", setUpDirection);
+        vehicle_orient_div.appendChild(x3_up);
+        vehicle_orient_div.appendChild(document.createTextNode("X3 Up Positive"));
+        vehicle_orient_div.appendChild(x3_down);
+        vehicle_orient_div.appendChild(document.createTextNode("X3 Down Positive"));
+
+        function setUpDirection() {
+            if (x3_up.checked) {
+                vehicle_adjust.base_rotation[0] = 0;
+            } else {
+                vehicle_adjust.base_rotation[0] = 90;
+            }
+        }
 
         content_veh.appendChild(vehicle_orient_div);
 
@@ -159,11 +212,60 @@ function initControls(page_elements) {
         vehicle_offset_label.innerHTML = "CRP Offset";
 
         let tran_offset_label = document.createElement("h3");
+        tran_offset_label.innerHTML = "Translation (X1, X2, X3)(m)";
+        vehicle_offset_div.appendChild(tran_offset_label);
+        vehicle_adjust.x1_element.type = "number";
+        vehicle_adjust.x1_element.min = -10;
+        vehicle_adjust.x1_element.max = 10;
+        vehicle_adjust.x1_element.step = 0.001;
+        vehicle_adjust.x1_element.value = 0.0;
+        vehicle_adjust.x1_element.addEventListener("change", redrawScene);
+        vehicle_adjust.x2_element.type = "number";
+        vehicle_adjust.x2_element.min = -10;
+        vehicle_adjust.x2_element.max = 10;
+        vehicle_adjust.x2_element.step = 0.001;
+        vehicle_adjust.x2_element.value = 0.0;
+        vehicle_adjust.x2_element.addEventListener("change", redrawScene);
+        vehicle_adjust.x3_element.type = "number";
+        vehicle_adjust.x3_element.min = -10;
+        vehicle_adjust.x3_element.max = 10;
+        vehicle_adjust.x3_element.step = 0.001;
+        vehicle_adjust.x3_element.value = 0.0;
+        vehicle_adjust.x3_element.addEventListener("change", redrawScene);
+
+        vehicle_offset_div.appendChild(vehicle_adjust.x1_element);
+        vehicle_offset_div.appendChild(vehicle_adjust.x2_element);
+        vehicle_offset_div.appendChild(vehicle_adjust.x3_element);
 
         let rot_offset_label = document.createElement("h3");
+        rot_offset_label.innerHTML = "Rotation (Roll, Pitch, Yaw)(degrees)";
+        vehicle_offset_div.appendChild(rot_offset_label);
+        vehicle_adjust.roll_element.type = "number";
+        vehicle_adjust.roll_element.min = -90;
+        vehicle_adjust.roll_element.max = 90;
+        vehicle_adjust.roll_element.step = 0.1;
+        vehicle_adjust.roll_element.value = 0.0;
+        vehicle_adjust.roll_element.addEventListener("change", redrawScene);
+        vehicle_adjust.pitch_element.type = "number";
+        vehicle_adjust.pitch_element.min = -180;
+        vehicle_adjust.pitch_element.max = 180;
+        vehicle_adjust.pitch_element.step = 0.1;
+        vehicle_adjust.pitch_element.value = 0.0;
+        vehicle_adjust.pitch_element.addEventListener("change", redrawScene);
+        vehicle_adjust.yaw_element.type = "number";
+        vehicle_adjust.yaw_element.min = -180;
+        vehicle_adjust.yaw_element.max = 180;
+        vehicle_adjust.yaw_element.step = 0.1;
+        vehicle_adjust.yaw_element.value = 0.0;
+        vehicle_adjust.yaw_element.addEventListener("change", redrawScene);
 
+        vehicle_offset_div.appendChild(vehicle_adjust.roll_element);
+        vehicle_offset_div.appendChild(vehicle_adjust.pitch_element);
+        vehicle_offset_div.appendChild(vehicle_adjust.yaw_element);
 
-        vehicle_div.appendChild(content_veh);
+        content_veh.appendChild(vehicle_offset_div);
+
+        vehicle_div.appendChild(content_veh_over);
 
         controls_div.appendChild(vehicle_div);
     }
@@ -301,6 +403,10 @@ function redrawScene() {
     if (current_vehicle) {
         let scale = vehicle_adjust.scale;
         current_vehicle.scale.set(scale, scale, scale);
+        let pos = vehicle_adjust.translation;
+        current_vehicle.position.x = pos[0];
+        current_vehicle.position.y = pos[1];
+        current_vehicle.position.z = pos[2];
     }
 }
 

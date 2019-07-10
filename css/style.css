@@ -77,7 +77,7 @@ canvas {
 
 #vehicle_controls {
     display: grid;
-    grid-template-columns: 3fr 3fr 3fr;
+    grid-template-columns: auto auto auto;
     grid-template-areas: "vehicle_selection vehicle_orientation vehicle_offsets";
 }
 
@@ -86,7 +86,7 @@ canvas {
 }
 
 #vehicle_offsets {
-  grid-area: vehicle_scale;
+  grid-area: vehicle_offsets;
 }
 
 #vehicle_orientation {
