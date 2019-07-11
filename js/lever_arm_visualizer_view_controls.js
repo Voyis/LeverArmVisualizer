@@ -12,55 +12,100 @@ import Stats from './stats.module.js';
 let scene;
 let camera;
 let renderer;
+let scene_inset;
+let camera_inset;
+let renderer_inset;
+let axes_inset;
 let controls;
 let current_vehicle;
 
+
 const required_elements = [
     "webgl_div",
-    "controls_div"
+    "controls_div",
 ];
+
+function LoadableModel(file, name, scale, default_size, rotation, offset) {
+    if (this instanceof LoadableModel === false) {
+        return new LoadableModel(file, name, scale, default_size, rotation, offset);
+    }
+    this.file = file;
+    this.name = name;
+    this.scale = scale;
+    this.default_size = default_size;
+    this.rotation = rotation;
+    this.offset = offset;
+}
+
 const vehicles = {
-    pontoon: {
-        file: "models/PontoonBoat.glb",
-        name: "Pontoon Boat",
-        scale: 5,
-        default_size: 4.0, //m at 10 scale
-        rotation: [0, 0, 0], //roll pitch yaw, degrees
-    },
-    submarine: {
-        file: "./models/submarine.glb",
-        name: "Submarine",
-        scale: 0.5,
-        default_size: 4.0, //m at 0.5scale
-        rotation: [0, 0, -90], //roll pitch yaw, degrees
-    },
+    pontoon: new LoadableModel(
+        "models/PontoonBoat.glb",
+        "Pontoon Boat",
+        5,
+        4.0, //m at 10 scale
+        [0, 0, 0], //roll pitch yaw, radians
+        [0, 0, 0]),
+    submarine: new LoadableModel(
+        "./models/submarine.glb",
+        "Submarine",
+        5,
+        4.0, //m at 0.5scale
+        [0, 0, Math.PI / 2], //roll pitch yaw, radians
+        [0, 0, 0]),
+    pro: new LoadableModel(
+        "./models/ULS500Pro.glb",
+        "ULS500Pro",
+        1,
+        1, //m at 0.5scale
+        [0, -Math.PI / 2, -Math.PI / 2],
+        [0, 0, 0]), //roll pitch yaw, radians
 };
-let vehicle_adjust = {
-    scale_element: document.createElement("INPUT"),
-    get scale() {
-        let current_selected_vehicle = getVehicleSelection();
-        let default_scale = vehicles[current_selected_vehicle].scale;
-        let default_size = vehicles[current_selected_vehicle].default_size;
-        return default_scale * this.scale_element.value / default_size;
-    },
-    x1_element: document.createElement("input"),
-    x2_element: document.createElement("input"),
-    x3_element: document.createElement("input"),
-    get translation() {
-        return new THREE.Vector3(Number(this.x1_element.value), Number(this.x2_element.value), Number(this.x3_element.value)).multiplyScalar(1000.0);
-    }, //user specified offsets
-    roll_element: document.createElement("input"),
-    pitch_element: document.createElement("input"),
-    yaw_element: document.createElement("input"),
-    get euler_angles() {
-        return new THREE.Euler(Number(this.roll_element.value) * Math.PI / 180, Number(this.pitch_element.value) * Math.PI / 180, Number(this.yaw_element.value) * Math.PI / 180);
-    }, //user specified offsets
-    get quaternion() {
-        let euler = this.euler_angles;
-        return new THREE.Quaternion().setFromEuler(this.euler_angles);
-    },
-    base_rotation: [0, 0, 0], //basic rotation to align co-ordinates of vehicle
-};
+
+const sensors = {
+    //single_gps: new LoadableModel(),
+    //dual_gps: new LoadableModel(),
+    //dvl: new LoadableModel(),
+    ULS500Pro: new LoadableModel("./models/ULS500Pro.glb", "ULS500 Pro", 1.0, 1.0, [0, 0, 0]),
+    ULS500Micro: new LoadableModel("./models/ULS500Micro.glb", "ULS500 Micro", 1.0, 1.0, [0, 0, 0]),
+}
+
+function ModelAdjustments(default_scale, default_size) {
+    if (this instanceof ModelAdjustments === false) {
+        return new ModelAdjustments(default_scale, default_size);
+    }
+
+    this.default_scale = default_scale;
+    this.default_size = default_size;
+    this.scale_element = document.createElement("INPUT");
+    this.x1_element = document.createElement("input");
+    this.x2_element = document.createElement("input");
+    this.x3_element = document.createElement("input");
+
+    this.roll_element = document.createElement("input");
+    this.pitch_element = document.createElement("input");
+    this.yaw_element = document.createElement("input");
+
+    this.base_rotation = [0, 0, 0]; //basic rotation to align co-ordinates of vehicle
+}
+
+ModelAdjustments.prototype.scale = function () {
+    return this.default_scale * this.scale_element.value / this.default_size;
+}
+
+ModelAdjustments.prototype.translation = function () {
+    return new THREE.Vector3(Number(this.x1_element.value), Number(this.x2_element.value), Number(this.x3_element.value)).multiplyScalar(1000.0);
+}
+
+ModelAdjustments.prototype.euler_angles = function () {
+    return new THREE.Euler(Number(this.roll_element.value) * Math.PI / 180, Number(this.pitch_element.value) * Math.PI / 180, Number(this.yaw_element.value) * Math.PI / 180);
+}
+
+ModelAdjustments.prototype.quaternion = function () {
+    return new THREE.Quaternion().setFromEuler(this.euler_angles());
+}
+
+let vehicle_adjust = new ModelAdjustments(vehicles["pontoon"].scale, vehicles["pontoon"].default_size);
+let sensors_adjust = {};
 
 //initialize and start rendering
 export function renderView(page_elements) {
@@ -204,7 +249,7 @@ function initControls(page_elements) {
             if (x3_up.checked) {
                 vehicle_adjust.base_rotation[0] = 0;
             } else {
-                vehicle_adjust.base_rotation[0] = Math.PI / 2;
+                vehicle_adjust.base_rotation[0] = Math.PI;
             }
             redrawScene();
         }
@@ -294,6 +339,8 @@ function initControls(page_elements) {
         sensor_div.appendChild(button);
         sensor_div.appendChild(content_sense);
         controls_div.appendChild(sensor_div);
+
+        let sensor_select = document.createElement("div");
     }
 
 
@@ -322,15 +369,36 @@ function getVehicleSelection() {
  * @param {object} page_elements 
  */
 function init3D(page_elements) {
-    let container_3d = document.getElementById(page_elements.webgl_div);
+    let container = document.getElementById(page_elements.webgl_div);
+    let container_3d = document.createElement('div');
     container_3d.id = "webGL_container";
+    let inset_div = document.createElement("div");
+    inset_div.id = "inset";
+    container.appendChild(container_3d);
+    container.appendChild(inset_div);
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, container_3d.clientWidth / container_3d.clientHeight, 0.1, 50000);
 
     renderer = new THREE.WebGLRenderer()
     renderer.setSize(container_3d.clientWidth, container_3d.clientHeight);
+    renderer.setClearColor(0xf0f0f0, 1);
     container_3d.appendChild(renderer.domElement);
+    renderer_inset = new THREE.WebGLRenderer({ alpha: true });
+    renderer_inset.setClearColor(0x000000, 0);
+    renderer_inset.setSize(inset_div.clientWidth, inset_div.clientHeight);
+    inset_div.appendChild(renderer_inset.domElement);
+
+    // scene_inset
+    scene_inset = new THREE.Scene();
+
+    // camera
+    camera_inset = new THREE.PerspectiveCamera(75, inset_div.clientWidth / inset_div.clientHeight, 0.1, 50000);
+    camera_inset.up = camera.up; // important!
+
+    // axes
+    axes_inset = new THREE.AxesHelper(100);
+    scene_inset.add(axes_inset);
 
     controls = new TrackballControls(camera, renderer.domElement);
 
@@ -399,7 +467,15 @@ function init3D(page_elements) {
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
+
+    camera_inset.position.copy(camera.position);
+    camera_inset.position.sub(controls.target);
+    camera_inset.position.setLength(200);
+
+    camera_inset.lookAt(scene_inset.position);
+
     renderer.render(scene, camera);
+    renderer_inset.render(scene_inset, camera_inset)
 }
 
 /**
@@ -410,7 +486,7 @@ function redrawScene() {
     if (current_vehicle) {
         current_vehicle.matrixAutoUpdate = false;
 
-        let scale = vehicle_adjust.scale;
+        let scale = vehicle_adjust.scale();
         let vehicle_scale = new THREE.Vector3(scale, scale, scale);
 
         //correct for model (align forward with x and up with z).
@@ -424,8 +500,8 @@ function redrawScene() {
         let base_matrix = new THREE.Matrix4().makeRotationFromQuaternion(base_quat);
 
         //Move vehicle reference point.
-        let crp_pos = vehicle_adjust.translation;
-        let crp_quat = vehicle_adjust.quaternion;
+        let crp_pos = vehicle_adjust.translation();
+        let crp_quat = vehicle_adjust.quaternion();
         let crp_matrix = new THREE.Matrix4().compose(crp_pos, crp_quat, new THREE.Vector3(1, 1, 1));
 
         let full_vehicle_matrix = crp_matrix.multiply(base_matrix.multiply(model_matrix));
@@ -440,6 +516,10 @@ function loadObjectIntoScene(selected_object) {
         console.log("Could not load requested model " + selected_object + ". Does not exist.");
         return;
     }
+
+    vehicle_adjust.scale_element.value = vehicles[selected_object].scale;
+    vehicle_adjust.default_scale = vehicles[selected_object].scale;
+    vehicle_adjust.default_size = vehicles[selected_object].default_size;
 
     let loader = new GLTFLoader();
     loader.load(vehicles[selected_object].file, function (gltf) {

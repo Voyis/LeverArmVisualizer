@@ -1,4 +1,9 @@
+html {
+  height: 100%;
+}
+
 body {
+  height: 100%;
 	margin: 0;
 	background-color: lightblue;
 	color: black;
@@ -26,23 +31,40 @@ canvas {
     height: 100%;
 }
 
-#info {
-	position: absolute;
-	top: 0px;
-	width: 100%;
-	padding: 10px;
-	box-sizing: border-box;
-	text-align: center;
-	z-index: 1; /* TODO Solve this in HTML */
-}
-
 .dg.ac {
 	z-index: 2 !important; /* TODO Solve this in HTML */
+}
+
+#page_content {
+  display: grid;
+  grid-template-areas: "container controls";
+  grid-template-rows: auto auto;
+}
+
+#container {
+  position: relative;
+  grid-area: container;
+  height: 800px;
 }
 
 #webGL_container {
     width: 100%;
     height: 800px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
+
+#inset  {
+    width: 200px;
+    height: 200px;
+    background-color: transparent; 
+    border: none;
+    margin: 20px;
+    padding: 0px;
+    left: 0px;
+    top: 0px;
+    position: absolute;
 }
 
 .collapsible {
@@ -72,7 +94,8 @@ canvas {
 }
 
 #controls_div {
-
+  grid-area: controls;
+  position: relative;
 }
 
 #vehicle_controls {
