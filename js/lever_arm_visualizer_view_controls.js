@@ -47,14 +47,18 @@ let vehicle_adjust = {
     x2_element: document.createElement("input"),
     x3_element: document.createElement("input"),
     get translation() {
-        return [Number(this.x1_element.value), Number(this.x2_element.value), Number(this.x3_element.value)];
+        return new THREE.Vector3(Number(this.x1_element.value), Number(this.x2_element.value), Number(this.x3_element.value)).multiplyScalar(1000.0);
     }, //user specified offsets
     roll_element: document.createElement("input"),
     pitch_element: document.createElement("input"),
     yaw_element: document.createElement("input"),
-    get rotation() {
-        return [Number(this.roll_element.value), Number(this.pitch_element.value), Number(this.yaw_element.value)];
+    get euler_angles() {
+        return new THREE.Euler(Number(this.roll_element.value) * Math.PI / 180, Number(this.pitch_element.value) * Math.PI / 180, Number(this.yaw_element.value) * Math.PI / 180);
     }, //user specified offsets
+    get quaternion() {
+        let euler = this.euler_angles;
+        return new THREE.Quaternion().setFromEuler(this.euler_angles);
+    },
     base_rotation: [0, 0, 0], //basic rotation to align co-ordinates of vehicle
 };
 
@@ -170,8 +174,9 @@ function initControls(page_elements) {
             if (x1_forward.checked) {
                 vehicle_adjust.base_rotation[2] = 0;
             } else {
-                vehicle_adjust.base_rotation[2] = 90;
+                vehicle_adjust.base_rotation[2] = Math.PI / 2;
             }
+            redrawScene();
         }
 
         let vehicle_up_label = document.createElement("h3");
@@ -199,8 +204,9 @@ function initControls(page_elements) {
             if (x3_up.checked) {
                 vehicle_adjust.base_rotation[0] = 0;
             } else {
-                vehicle_adjust.base_rotation[0] = 90;
+                vehicle_adjust.base_rotation[0] = Math.PI / 2;
             }
+            redrawScene();
         }
 
         content_veh.appendChild(vehicle_orient_div);
@@ -210,6 +216,7 @@ function initControls(page_elements) {
         vehicle_offset_div.id = "vehicle_offsets";
         let vehicle_offset_label = document.createElement("h2");
         vehicle_offset_label.innerHTML = "CRP Offset";
+        vehicle_offset_div.appendChild(vehicle_offset_label);
 
         let tran_offset_label = document.createElement("h3");
         tran_offset_label.innerHTML = "Translation (X1, X2, X3)(m)";
@@ -401,12 +408,30 @@ function animate() {
 function redrawScene() {
     //adjust vehicle
     if (current_vehicle) {
+        current_vehicle.matrixAutoUpdate = false;
+
         let scale = vehicle_adjust.scale;
-        current_vehicle.scale.set(scale, scale, scale);
-        let pos = vehicle_adjust.translation;
-        current_vehicle.position.x = pos[0];
-        current_vehicle.position.y = pos[1];
-        current_vehicle.position.z = pos[2];
+        let vehicle_scale = new THREE.Vector3(scale, scale, scale);
+
+        //correct for model (align forward with x and up with z).
+        let model_rot = new THREE.Euler(...vehicles[getVehicleSelection()].rotation);
+        let model_quat = new THREE.Quaternion().setFromEuler(model_rot);
+        let model_matrix = new THREE.Matrix4().compose(new THREE.Vector3(0, 0, 0), model_quat, vehicle_scale);
+
+        //Adjust vehicle_co-ords.
+        let base_rot = new THREE.Euler(...vehicle_adjust.base_rotation);
+        let base_quat = new THREE.Quaternion().setFromEuler(base_rot);
+        let base_matrix = new THREE.Matrix4().makeRotationFromQuaternion(base_quat);
+
+        //Move vehicle reference point.
+        let crp_pos = vehicle_adjust.translation;
+        let crp_quat = vehicle_adjust.quaternion;
+        let crp_matrix = new THREE.Matrix4().compose(crp_pos, crp_quat, new THREE.Vector3(1, 1, 1));
+
+        let full_vehicle_matrix = crp_matrix.multiply(base_matrix.multiply(model_matrix));
+
+        current_vehicle.matrix = full_vehicle_matrix;
+
     }
 }
 
@@ -418,12 +443,6 @@ function loadObjectIntoScene(selected_object) {
 
     let loader = new GLTFLoader();
     loader.load(vehicles[selected_object].file, function (gltf) {
-        let scale = vehicle_adjust.scale;
-        gltf.scene.scale.set(scale, scale, scale);
-        gltf.scene.position.x = 0;				    //Position (x = right+ left-) 
-        gltf.scene.position.y = 0;				    //Position (y = up+, down-)
-        gltf.scene.position.z = 0;
-
         gltf.scene.traverse((o) => {
             if (o.isMesh) {
                 o.material = new THREE.MeshPhongMaterial({
@@ -440,7 +459,11 @@ function loadObjectIntoScene(selected_object) {
             scene.remove(current_vehicle);
         }
         current_vehicle = gltf.scene;
+
+        redrawScene();
+
         scene.add(gltf.scene);
+
     }, undefined, function (error) {
         console.error(error);
     });
