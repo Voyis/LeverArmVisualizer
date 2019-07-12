@@ -42,31 +42,30 @@ const vehicles = {
         "models/PontoonBoat.glb",
         "Pontoon Boat",
         5,
-        4.0, //m at 10 scale
-        [0, 0, 0], //roll pitch yaw, radians
+        4.0,
+        [0, 0, Math.PI], //roll pitch yaw, radians
         [0, 0, 0]),
     submarine: new LoadableModel(
         "./models/submarine.glb",
         "Submarine",
+        0.5,
         5,
-        4.0, //m at 0.5scale
-        [0, 0, Math.PI / 2], //roll pitch yaw, radians
+        [0, 0, -Math.PI / 2], //roll pitch yaw, radians
         [0, 0, 0]),
-    pro: new LoadableModel(
-        "./models/ULS500Pro.glb",
-        "ULS500Pro",
-        1,
-        1, //m at 0.5scale
-        [0, -Math.PI / 2, -Math.PI / 2],
-        [0, 0, 0]), //roll pitch yaw, radians
 };
 
 const sensors = {
     //single_gps: new LoadableModel(),
     //dual_gps: new LoadableModel(),
     //dvl: new LoadableModel(),
-    ULS500Pro: new LoadableModel("./models/ULS500Pro.glb", "ULS500 Pro", 1.0, 1.0, [0, 0, 0]),
-    ULS500Micro: new LoadableModel("./models/ULS500Micro.glb", "ULS500 Micro", 1.0, 1.0, [0, 0, 0]),
+    pro: new LoadableModel(
+        "./models/ULS500Pro.glb",
+        "ULS500 Pro",
+        1,
+        1, //m at 0.5scale
+        [0, Math.PI / 2, -Math.PI / 2],//roll pitch yaw, radians
+        [60, 634, 231.5]),
+    //ULS500Micro: new LoadableModel("./models/ULS500Micro.glb", "ULS500 Micro", 1.0, 1.0, [0, 0, 0]),
 }
 
 function ModelAdjustments(default_scale, default_size) {
@@ -77,13 +76,58 @@ function ModelAdjustments(default_scale, default_size) {
     this.default_scale = default_scale;
     this.default_size = default_size;
     this.scale_element = document.createElement("INPUT");
+    this.scale_element.type = "number";
+    this.scale_element.step = 0.1
+    this.scale_element.min = 0.5;
+    this.scale_element.max = 20.;
+    this.scale_element.value = this.default_size;
+    this.scale_element.addEventListener("change", redrawScene);
+
     this.x1_element = document.createElement("input");
     this.x2_element = document.createElement("input");
     this.x3_element = document.createElement("input");
 
+    this.x1_element.type = "number";
+    this.x1_element.min = -10;
+    this.x1_element.max = 10;
+    this.x1_element.step = 0.001;
+    this.x1_element.value = 0.0;
+    this.x1_element.addEventListener("change", redrawScene);
+    this.x2_element.type = "number";
+    this.x2_element.min = -10;
+    this.x2_element.max = 10;
+    this.x2_element.step = 0.001;
+    this.x2_element.value = 0.0;
+    this.x2_element.addEventListener("change", redrawScene);
+    this.x3_element.type = "number";
+    this.x3_element.min = -10;
+    this.x3_element.max = 10;
+    this.x3_element.step = 0.001;
+    this.x3_element.value = 0.0;
+    this.x3_element.addEventListener("change", redrawScene);
+
     this.roll_element = document.createElement("input");
     this.pitch_element = document.createElement("input");
     this.yaw_element = document.createElement("input");
+
+    this.roll_element.type = "number";
+    this.roll_element.min = -90;
+    this.roll_element.max = 90;
+    this.roll_element.step = 0.1;
+    this.roll_element.value = 0.0;
+    this.roll_element.addEventListener("change", redrawScene);
+    this.pitch_element.type = "number";
+    this.pitch_element.min = -180;
+    this.pitch_element.max = 180;
+    this.pitch_element.step = 0.1;
+    this.pitch_element.value = 0.0;
+    this.pitch_element.addEventListener("change", redrawScene);
+    this.yaw_element.type = "number";
+    this.yaw_element.min = -180;
+    this.yaw_element.max = 180;
+    this.yaw_element.step = 0.1;
+    this.yaw_element.value = 0.0;
+    this.yaw_element.addEventListener("change", redrawScene);
 
     this.base_rotation = [0, 0, 0]; //basic rotation to align co-ordinates of vehicle
 }
@@ -165,7 +209,7 @@ function initControls(page_elements) {
                 radio_button.checked = true;
             }
             radio_button.addEventListener("change", function () {
-                loadObjectIntoScene(keys[i]);
+                loadVehicleIntoScene(keys[i]);
             });
             let radio_label = document.createTextNode(vehicles[keys[i]].name);
             vehicle_select_div.appendChild(radio_button);
@@ -176,12 +220,7 @@ function initControls(page_elements) {
         //Vehicle Scale
         let vehicle_adjust_label = document.createElement("h2");
         vehicle_adjust_label.innerHTML = "Vehicle Length (approx)"
-        vehicle_adjust.scale_element.type = "number";
-        vehicle_adjust.scale_element.step = 0.1
-        vehicle_adjust.scale_element.min = 2;
-        vehicle_adjust.scale_element.max = 20.;
-        vehicle_adjust.scale_element.value = vehicles[keys[0]].default_size;
-        vehicle_adjust.scale_element.addEventListener("change", redrawScene);
+
         vehicle_select_div.appendChild(vehicle_adjust_label);
         vehicle_select_div.appendChild(vehicle_adjust.scale_element);
         vehicle_select_div.appendChild(document.createTextNode(" m"));
@@ -266,25 +305,6 @@ function initControls(page_elements) {
         let tran_offset_label = document.createElement("h3");
         tran_offset_label.innerHTML = "Translation (X1, X2, X3)(m)";
         vehicle_offset_div.appendChild(tran_offset_label);
-        vehicle_adjust.x1_element.type = "number";
-        vehicle_adjust.x1_element.min = -10;
-        vehicle_adjust.x1_element.max = 10;
-        vehicle_adjust.x1_element.step = 0.001;
-        vehicle_adjust.x1_element.value = 0.0;
-        vehicle_adjust.x1_element.addEventListener("change", redrawScene);
-        vehicle_adjust.x2_element.type = "number";
-        vehicle_adjust.x2_element.min = -10;
-        vehicle_adjust.x2_element.max = 10;
-        vehicle_adjust.x2_element.step = 0.001;
-        vehicle_adjust.x2_element.value = 0.0;
-        vehicle_adjust.x2_element.addEventListener("change", redrawScene);
-        vehicle_adjust.x3_element.type = "number";
-        vehicle_adjust.x3_element.min = -10;
-        vehicle_adjust.x3_element.max = 10;
-        vehicle_adjust.x3_element.step = 0.001;
-        vehicle_adjust.x3_element.value = 0.0;
-        vehicle_adjust.x3_element.addEventListener("change", redrawScene);
-
         vehicle_offset_div.appendChild(vehicle_adjust.x1_element);
         vehicle_offset_div.appendChild(vehicle_adjust.x2_element);
         vehicle_offset_div.appendChild(vehicle_adjust.x3_element);
@@ -292,25 +312,6 @@ function initControls(page_elements) {
         let rot_offset_label = document.createElement("h3");
         rot_offset_label.innerHTML = "Rotation (Roll, Pitch, Yaw)(degrees)";
         vehicle_offset_div.appendChild(rot_offset_label);
-        vehicle_adjust.roll_element.type = "number";
-        vehicle_adjust.roll_element.min = -90;
-        vehicle_adjust.roll_element.max = 90;
-        vehicle_adjust.roll_element.step = 0.1;
-        vehicle_adjust.roll_element.value = 0.0;
-        vehicle_adjust.roll_element.addEventListener("change", redrawScene);
-        vehicle_adjust.pitch_element.type = "number";
-        vehicle_adjust.pitch_element.min = -180;
-        vehicle_adjust.pitch_element.max = 180;
-        vehicle_adjust.pitch_element.step = 0.1;
-        vehicle_adjust.pitch_element.value = 0.0;
-        vehicle_adjust.pitch_element.addEventListener("change", redrawScene);
-        vehicle_adjust.yaw_element.type = "number";
-        vehicle_adjust.yaw_element.min = -180;
-        vehicle_adjust.yaw_element.max = 180;
-        vehicle_adjust.yaw_element.step = 0.1;
-        vehicle_adjust.yaw_element.value = 0.0;
-        vehicle_adjust.yaw_element.addEventListener("change", redrawScene);
-
         vehicle_offset_div.appendChild(vehicle_adjust.roll_element);
         vehicle_offset_div.appendChild(vehicle_adjust.pitch_element);
         vehicle_offset_div.appendChild(vehicle_adjust.yaw_element);
@@ -340,7 +341,37 @@ function initControls(page_elements) {
         sensor_div.appendChild(content_sense);
         controls_div.appendChild(sensor_div);
 
+        let sensor_content_div = document.createElement("div");
+        content_sense.appendChild(sensor_content_div);
+
         let sensor_select = document.createElement("div");
+        let sensor_select_header = document.createElement("h2");
+        sensor_select_header.innerHTML = "Sensor Selection";
+        sensor_select.appendChild(sensor_select_header);
+
+        let keys = Object.keys(sensors);
+        for (let i = 0; i < keys.length; i++) {
+            let radio_button = document.createElement("input");
+            radio_button.type = "radio";
+            radio_button.name = "sensors";
+            radio_button.value = keys[i];
+            if (i === 0) {
+                radio_button.checked = true;
+            }
+            let radio_label = document.createTextNode(sensors[keys[i]].name);
+            sensor_select.appendChild(radio_button);
+            sensor_select.appendChild(radio_label);
+        }
+        sensor_select.appendChild(document.createElement("br"));
+        let add_sensor_button = document.createElement("button");
+        add_sensor_button.innerHTML = "Add Sensor";
+        add_sensor_button.addEventListener("click", () => { loadSensorIntoScene(getSensorSelection()) });
+        sensor_select.appendChild(add_sensor_button);
+
+        sensor_content_div.appendChild(sensor_select);
+        let added_sensor_div = document.createElement("div");
+        added_sensor_div.id = "added_sensor_div";
+        sensor_content_div.appendChild(added_sensor_div);
     }
 
 
@@ -357,6 +388,15 @@ function initControls(page_elements) {
 
 function getVehicleSelection() {
     let radios = document.getElementsByName("vehicles");
+    for (let i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+            return radios[i].value;
+        }
+    }
+}
+
+function getSensorSelection() {
+    let radios = document.getElementsByName("sensors");
     for (let i = 0; i < radios.length; i++) {
         if (radios[i].checked) {
             return radios[i].value;
@@ -409,7 +449,7 @@ function init3D(page_elements) {
     scene.add(ambientLight, pointLight);
 
     //load default selected object.
-    loadObjectIntoScene("pontoon");
+    loadVehicleIntoScene("pontoon");
 
     camera.position.z = 5000;
 
@@ -490,9 +530,10 @@ function redrawScene() {
         let vehicle_scale = new THREE.Vector3(scale, scale, scale);
 
         //correct for model (align forward with x and up with z).
+        let model_offset = new THREE.Vector3(...vehicles[getVehicleSelection()].offset);
         let model_rot = new THREE.Euler(...vehicles[getVehicleSelection()].rotation);
         let model_quat = new THREE.Quaternion().setFromEuler(model_rot);
-        let model_matrix = new THREE.Matrix4().compose(new THREE.Vector3(0, 0, 0), model_quat, vehicle_scale);
+        let model_matrix = new THREE.Matrix4().compose(model_offset, model_quat, vehicle_scale);
 
         //Adjust vehicle_co-ords.
         let base_rot = new THREE.Euler(...vehicle_adjust.base_rotation);
@@ -504,25 +545,130 @@ function redrawScene() {
         let crp_quat = vehicle_adjust.quaternion();
         let crp_matrix = new THREE.Matrix4().compose(crp_pos, crp_quat, new THREE.Vector3(1, 1, 1));
 
-        let full_vehicle_matrix = crp_matrix.multiply(base_matrix.multiply(model_matrix));
+        //Set the vehicle pose
+        current_vehicle.matrix = crp_matrix.multiply(base_matrix.multiply(model_matrix));
 
-        current_vehicle.matrix = full_vehicle_matrix;
+        //loop through the loaded sensor and get their positions relative the the vehicle
+        let sensors_list = document.getElementById("added_sensor_div");
+        [].forEach.call(sensors_list.childNodes, (sensor_div) => {
+            let sensor_id = sensor_div.id;
+
+            if (!sensors_adjust[sensor_id]) {
+                console.log("No sensor id matching " + sensor_id);
+                return;
+            }
+
+            let sensor_name = sensors_adjust[sensor_id].model_id;
+            if (!sensors[sensor_name]) {
+                console.log("No sensor name matching " + sensor_name);
+                return;
+            }
+
+            sensors_adjust[sensor_id].scene.matrixAutoUpdate = false;
+
+            let sensor_scale = sensors_adjust[sensor_id].scale();
+            let sensor_scale_vec = new THREE.Vector3(sensor_scale, sensor_scale, sensor_scale);
+
+            //sensor base transform
+            let sensor_offset = new THREE.Vector3(...sensors[sensor_name].offset);
+            let sensor_rot = new THREE.Euler(...sensors[sensor_name].rotation);
+            let sensor_quat = new THREE.Quaternion().setFromEuler(sensor_rot);
+            let sensor_matrix = new THREE.Matrix4().compose(sensor_offset, sensor_quat, sensor_scale_vec);
+
+            //lever arm transform
+            let lever_pos = sensors_adjust[sensor_id].translation();
+            let lever_quat = sensors_adjust[sensor_id].quaternion();
+            let lever_matrix = new THREE.Matrix4().compose(lever_pos, lever_quat, new THREE.Vector3(1, 1, 1));
+
+            let final_sensor_transform = lever_matrix.multiply(sensor_matrix);
+
+            sensors_adjust[sensor_id].scene.matrix = final_sensor_transform;
+        })
+
+
 
     }
 }
 
-function loadObjectIntoScene(selected_object) {
-    if (!vehicles[selected_object]) {
-        console.log("Could not load requested model " + selected_object + ". Does not exist.");
+function loadSensorIntoScene(selected_sensor) {
+    if (!sensors[selected_sensor]) {
+        console.log("Could not load requested model " + selected_sensor + ". Does not exist.");
         return;
     }
 
-    vehicle_adjust.scale_element.value = vehicles[selected_object].scale;
-    vehicle_adjust.default_scale = vehicles[selected_object].scale;
-    vehicle_adjust.default_size = vehicles[selected_object].default_size;
+    loadObjectIntoScene(sensors[selected_sensor].file, sensorLoadCallback);
 
-    let loader = new GLTFLoader();
-    loader.load(vehicles[selected_object].file, function (gltf) {
+    function sensorLoadCallback(gltf) {
+
+        //create new adjust element for the sensor
+        let new_sensor_id = selected_sensor + "_" + String(Date.now());
+        sensors_adjust[new_sensor_id] = new ModelAdjustments(sensors[selected_sensor].scale, sensors[selected_sensor].default_size);
+        sensors_adjust[new_sensor_id].scale_element.value = sensors[selected_sensor].default_size;
+        sensors_adjust[new_sensor_id].model_id = selected_sensor;
+
+        //add appropriate elements to the display
+        let sensor_list_div = document.getElementById("added_sensor_div");
+        let sensor_div = document.createElement("div");
+        sensor_div.id = new_sensor_id;
+        let sensor_header = document.createElement("h2");
+        sensor_header.innerHTML = sensors[selected_sensor].name;
+        sensor_div.appendChild(sensor_header);
+
+        let sensor_lever = document.createElement("div");
+        sensor_lever.class = "levers";
+        let sensor_translation = document.createElement("div");
+        sensor_translation.class = "lever_translation";
+        let sensor_rotation = document.createElement("div");
+        sensor_rotation.class = "lever_rotation";
+
+        let trans_header = document.createElement("h3");
+        trans_header.innerHTML = "Translation (X1, X2, X3)(m)";
+        sensor_translation.appendChild(trans_header);
+        sensor_translation.appendChild(sensors_adjust[new_sensor_id].x1_element);
+        sensor_translation.appendChild(sensors_adjust[new_sensor_id].x2_element);
+        sensor_translation.appendChild(sensors_adjust[new_sensor_id].x3_element);
+
+        let rot_header = document.createElement("h3");
+        rot_header.innerHTML = "Rotation (Roll, Pitch, Yaw)(degrees)";
+        sensor_rotation.appendChild(rot_header);
+        sensor_rotation.appendChild(sensors_adjust[new_sensor_id].roll_element);
+        sensor_rotation.appendChild(sensors_adjust[new_sensor_id].pitch_element);
+        sensor_rotation.appendChild(sensors_adjust[new_sensor_id].yaw_element);
+
+        sensor_lever.appendChild(sensor_translation);
+        sensor_lever.appendChild(sensor_rotation);
+        sensor_div.appendChild(sensor_lever);
+
+        sensor_list_div.appendChild(sensor_div);
+
+        //set the model colour to red.
+        gltf.scene.traverse((o) => {
+            if (o.isMesh) {
+                o.material = new THREE.MeshPhongMaterial({
+                    color: 0xff0000,
+                    flatShading: true,
+                    transparent: false,
+                });
+                //o.material.wireframe = true;
+            }
+        });
+
+        sensors_adjust[new_sensor_id].scene = gltf.scene;
+    }
+}
+
+function loadVehicleIntoScene(selected_vehicle) {
+    if (!vehicles[selected_vehicle]) {
+        console.log("Could not load requested model " + selected_vehicle + ". Does not exist.");
+        return;
+    }
+
+    loadObjectIntoScene(vehicles[selected_vehicle].file, vehicleLoadCallback);
+
+    function vehicleLoadCallback(gltf) {
+        vehicle_adjust.scale_element.value = vehicles[selected_vehicle].default_size;
+        vehicle_adjust.default_scale = vehicles[selected_vehicle].scale;
+        vehicle_adjust.default_size = vehicles[selected_vehicle].default_size;
         gltf.scene.traverse((o) => {
             if (o.isMesh) {
                 o.material = new THREE.MeshPhongMaterial({
@@ -539,13 +685,17 @@ function loadObjectIntoScene(selected_object) {
             scene.remove(current_vehicle);
         }
         current_vehicle = gltf.scene;
+    }
+}
 
+function loadObjectIntoScene(filename, loadCallback) {
+
+    let loader = new GLTFLoader();
+    loader.load(filename, function (gltf) {
+        loadCallback(gltf);
         redrawScene();
-
         scene.add(gltf.scene);
-
     }, undefined, function (error) {
         console.error(error);
     });
-
 }
