@@ -52,6 +52,13 @@ const vehicles = {
         5,
         [0, 0, -Math.PI / 2], //roll pitch yaw, radians
         [0, 0, 0]),
+    cougar_xtc: new LoadableModel(
+        "./models/cougar_xtc.glb",
+        "Cougar XTC ROV",
+        1,
+        1.3,
+        [Math.PI, 0, 0], //roll pitch yaw, radians
+        [-1000, 450, -50]),
 };
 
 const sensors = {
@@ -531,6 +538,7 @@ function redrawScene() {
 
         //correct for model (align forward with x and up with z).
         let model_offset = new THREE.Vector3(...vehicles[getVehicleSelection()].offset);
+        model_offset = model_offset.multiplyScalar(scale);
         let model_rot = new THREE.Euler(...vehicles[getVehicleSelection()].rotation);
         let model_quat = new THREE.Quaternion().setFromEuler(model_rot);
         let model_matrix = new THREE.Matrix4().compose(model_offset, model_quat, vehicle_scale);
@@ -653,6 +661,19 @@ function loadSensorIntoScene(selected_sensor) {
             }
         });
 
+        let axes = new THREE.AxesHelper(300);
+
+        //Move axes to the center of the model before adding.
+        let sensor_offset = new THREE.Vector3(...sensors[selected_sensor].offset);
+        let sensor_rot = new THREE.Euler(...sensors[selected_sensor].rotation);
+        let sensor_quat = new THREE.Quaternion().setFromEuler(sensor_rot);
+        let sensor_matrix = new THREE.Matrix4().compose(sensor_offset, sensor_quat, new THREE.Vector3(1, 1, 1));
+        let inverse_sensor_matrix = new THREE.Matrix4();
+        inverse_sensor_matrix.getInverse(sensor_matrix);
+        axes.matrixAutoUpdate = false;
+        axes.matrix = inverse_sensor_matrix;
+
+        gltf.scene.add(axes);
         sensors_adjust[new_sensor_id].scene = gltf.scene;
     }
 }
@@ -693,8 +714,8 @@ function loadObjectIntoScene(filename, loadCallback) {
     let loader = new GLTFLoader();
     loader.load(filename, function (gltf) {
         loadCallback(gltf);
-        redrawScene();
         scene.add(gltf.scene);
+        redrawScene();
     }, undefined, function (error) {
         console.error(error);
     });
