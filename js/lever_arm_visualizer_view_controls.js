@@ -72,7 +72,35 @@ const sensors = {
         1, //m at 0.5scale
         [0, Math.PI / 2, -Math.PI / 2],//roll pitch yaw, radians
         [60, 634, 231.5]),
-    //ULS500Micro: new LoadableModel("./models/ULS500Micro.glb", "ULS500 Micro", 1.0, 1.0, [0, 0, 0]),
+    ULS500Micro: new LoadableModel(
+        "./models/Micro-NoStills.glb",
+        "ULS500 Micro",
+        1.0,
+        1.0,
+        [Math.PI / 2, 0, 0],
+        [-51.5, -412.5, -90]),
+    ULS500MicroStills: new LoadableModel(
+        "./models/MicroWithStills.glb",
+        "ULS500 Micro with Stills",
+        1.0,
+        1.0,
+        [Math.PI / 2, 0, 0],
+        [-0.075, -0.41275, -0.1025]),
+    GPS: new LoadableModel(
+        "./models/gps.glb",
+        "GPS Antenna",
+        1.0,
+        1.0,
+        [Math.PI, 0, Math.PI / 2],
+        [75, 75, 0]),
+    NortekDVL: new LoadableModel(
+        "./models/NortekDVL1000.glb",
+        "Nortek DVL 1000 (4000m)",
+        1.0,
+        1.0,
+        [Math.PI, 0, -Math.PI / 4],
+        [-82.5, 0, -85.1]),
+
 }
 
 function ModelAdjustments(default_scale, default_size) {
