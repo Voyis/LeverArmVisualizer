@@ -85,7 +85,7 @@ const sensors = {
         1.0,
         1.0,
         [Math.PI / 2, 0, 0],
-        [-0.075, -0.41275, -0.1025]),
+        [-75, -412.75, -102.5]),
     GPS: new LoadableModel(
         "./models/gps.glb",
         "GPS Antenna",
