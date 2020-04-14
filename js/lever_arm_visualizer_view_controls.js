@@ -100,6 +100,20 @@ const sensors = {
         1.0,
         [Math.PI, 0, -Math.PI / 4],
         [-82.5, 0, -85.1]),
+    VehicleLaser: new LoadableModel(
+        "./models/Stills-KM.glb",
+        "Standalone Laser Camera",
+        1.0,
+        1.0,
+        [22.0 / 180.0 * Math.PI, 0, 0],//roll pitch yaw, radians
+        [-73, -180, 260]),
+    ProStills: new LoadableModel(
+        "./models/Stills-KM.glb",
+        "Standalone Stills Camera",
+        1.0,
+        1.0,
+        [0, 0, 0],//roll pitch yaw, radians
+        [-75, -50, 270]),
 
 }
 
